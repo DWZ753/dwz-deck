@@ -294,8 +294,9 @@ void menu_navigate(int delta)
             if (val < 0)   val = 0;
             if (val > 100) val = 100;
             g_oled_bright = val;
-            /* 实时生效, 转编码器立即看到屏幕变化 */
-            u8g2.setContrast(map(g_oled_bright, 0, 100, 0, 255));
+            /* 只置脏标志: I2C 写屏必须由 Core 1 执行,
+             * 否则与渲染线程抢总线导致画面崩坏 */
+            g_contrast_dirty = true;
         } else if (menu.active_page == PAGE_CUBE_SPEED) {
             int val = g_cube_speed + delta * step;
             if (val < 0)   val = 0;

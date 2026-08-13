@@ -173,6 +173,7 @@ volatile int           g_cube_speed   = 50;
 volatile int           g_cube_mode    = 0;   /* 0=Cube 1=Tetra 2=Octa 3=Icosa 4=Random */
 volatile int           g_logo_style   = 0;   /* 0=流星雨 1=烟花 2=随机 */
 volatile int           g_oled_bright  = 100; /* OLED 对比度 0-100% */
+volatile bool          g_contrast_dirty = false; /* Core0 置位, Core1 写屏 */
 volatile int           g_saver_timeout = 0;  /* 0=10s 1=30s 2=60s 3=关闭 */
 volatile bool          g_replay_logo  = false;
 
@@ -969,6 +970,12 @@ void setup1()
 
 void loop1()
 {
+    /* OLED 对比度脏标志 (Core 0 置位): 渲染线程内写屏, 避免总线竞争 */
+    if (g_contrast_dirty) {
+        g_contrast_dirty = false;
+        u8g2.setContrast(map(g_oled_bright, 0, 100, 0, 255));
+    }
+
     /* 重放开屏动画 (调试用, 从菜单触发) */
     if (g_replay_logo) {
         g_replay_logo = false;

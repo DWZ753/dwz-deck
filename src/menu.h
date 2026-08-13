@@ -129,6 +129,7 @@ extern volatile int     g_cube_mode;
 extern volatile int     g_logo_style;
 extern volatile int     g_oled_bright;
 extern volatile int     g_saver_timeout;
+extern volatile bool    g_contrast_dirty;
 extern volatile bool    g_replay_logo;
 
 #endif

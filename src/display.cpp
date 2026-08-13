@@ -258,6 +258,10 @@ static const uint8_t ICON_HEX[8] = {    /* 六边形线框 (Screen Saver/Shape) 
     0x3C, 0x42, 0x81, 0x81, 0x81, 0x81, 0x42, 0x3C};
 static const uint8_t ICON_DIAMOND[8] = {/* 菱形 (Startup Logo/Style) */
     0x18, 0x3C, 0x7E, 0xFF, 0xFF, 0x7E, 0x3C, 0x18};
+static const uint8_t ICON_PANEL[8] = {   /* 显示屏 (OLED 亮度) */
+    0xFF, 0x81, 0xBD, 0xA5, 0xA5, 0xBD, 0x81, 0xFF};
+static const uint8_t ICON_CLOCK[8] = {   /* 时钟 (屏保超时) */
+    0x7E, 0x81, 0x91, 0x91, 0x91, 0x99, 0x81, 0x7E};
 
 /* 导航类菜单行 → 图标 (无图标的页/行返回 nullptr) */
 static const uint8_t* menu_icon_for(int page, int idx)
@@ -276,8 +280,9 @@ static const uint8_t* menu_icon_for(int page, int idx)
             switch (idx) {
                 case 0: return ICON_SPARKLE;
                 case 1: return ICON_SUN;
-                case 2: return ICON_BOLT;
-                case 3: return ICON_BACK;
+                case 2: return ICON_PANEL;
+                case 3: return ICON_BOLT;
+                case 4: return ICON_BACK;
             }
             return nullptr;
         case PAGE_ANIM:
@@ -291,7 +296,8 @@ static const uint8_t* menu_icon_for(int page, int idx)
             switch (idx) {
                 case 0: return ICON_BOLT;
                 case 1: return ICON_HEX;
-                case 2: return ICON_BACK;
+                case 2: return ICON_CLOCK;
+                case 3: return ICON_BACK;
             }
             return nullptr;
         case PAGE_LOGO_MENU:
@@ -812,14 +818,15 @@ void oled_show_calculator(bool show)
     if (show) u8g2.sendBuffer();
 }
 
-/* 当前页"记忆选项"下标 (行右侧 ">" 标识), 无记忆选项的页返回 -1 */
+/* 当前页"记忆选项"下标 (左侧 ">" 标识), 无记忆选项的页返回 -1 */
 static int menu_marked_index()
 {
     switch (menu.active_page) {
-        case PAGE_LED_MODE:   return (int)g_led_mode;
-        case PAGE_KEY_LAYER:  return (int)g_layer;
-        case PAGE_LOGO_STYLE: return g_logo_style;
-        default:              return -1;
+        case PAGE_LED_MODE:      return (int)g_led_mode;
+        case PAGE_KEY_LAYER:     return (int)g_layer;
+        case PAGE_LOGO_STYLE:    return g_logo_style;
+        case PAGE_SAVER_TIMEOUT: return g_saver_timeout;
+        default:                 return -1;
     }
 }
 
@@ -841,6 +848,8 @@ void oled_show_menu()
 
             if (menu.active_page == PAGE_LED_SPEED)
                 oled_draw_popup("Speed", g_led_speed, false, false);
+            else if (menu.active_page == PAGE_LED_OLED)
+                oled_draw_popup("OLED", g_oled_bright, false, false);
             else if (menu.active_page == PAGE_CUBE_SPEED)
                 oled_draw_popup("Speed", g_cube_speed, false, false);
             else
@@ -850,6 +859,8 @@ void oled_show_menu()
         } else {
             if (menu.active_page == PAGE_LED_SPEED)
                 oled_draw_popup("Speed", g_led_speed);
+            else if (menu.active_page == PAGE_LED_OLED)
+                oled_draw_popup("OLED", g_oled_bright);
             else if (menu.active_page == PAGE_CUBE_SPEED)
                 oled_draw_popup("Speed", g_cube_speed);
             else

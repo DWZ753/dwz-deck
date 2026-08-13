@@ -49,16 +49,18 @@
 ## 菜单树
 
 ```
-Main        LED          Animation       Screen Saver   Startup Logo
-├ LED ──── ├ Effect ─── ├ Screen Saver  ├ Speed(滑块)   ├ Replay
-├ Animation  ├ Bright    └ Startup Logo ├ Shape(预览)   └ Style
-├ Key Layer  └ Speed                    └ Back            ├ Meteor
-└ System Info                                              ├ Firework
-                                                           ├ Random
-                                                           └ Back
+Main        LED             Animation       Screen Saver       Startup Logo
+├ LED ──── ├ Effect ────── ├ Screen Saver  ├ Speed(滑块)      ├ Replay
+├ Animation  ├ Bright(滑块)  └ Startup Logo ├ Shape(预览)      └ Style
+├ Key Layer  ├ OLED(滑块)                   ├ Timeout(10s/30s/60s/Off)  ├ Meteor
+└ System Info └ Speed(滑块)                  └ Back                       ├ Firework
+                                                                        ├ Random
+                                                                        └ Back
 ```
 
-形状预览页用编码器直接切换多面体，`●` 标记当前已保存的形状。
+- 形状预览页用编码器直接切换多面体，`●` 标记当前已保存的形状
+- 选择类页面以 `>` 前缀标记当前生效选项，导航类页面行首有 8×8 图标
+- OLED 亮度调节实时生效
 
 ## 构建
 

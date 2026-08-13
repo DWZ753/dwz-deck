@@ -43,6 +43,7 @@ enum MenuPageID {
     PAGE_LED_MODE,
     PAGE_LED_BRIGHTNESS,
     PAGE_LED_SPEED,
+    PAGE_LED_OLED,
     PAGE_KEY_LAYER,
     PAGE_SYSINFO,
     PAGE_ANIM,
@@ -50,7 +51,8 @@ enum MenuPageID {
     PAGE_CUBE_SPEED,
     PAGE_SHAPE_PREVIEW,
     PAGE_LOGO_MENU,
-    PAGE_LOGO_STYLE
+    PAGE_LOGO_STYLE,
+    PAGE_SAVER_TIMEOUT
 };
 
 /* 菜单项: 标签 + 类型 */
@@ -125,6 +127,8 @@ extern volatile KeyLayer g_layer;
 extern volatile int     g_cube_speed;
 extern volatile int     g_cube_mode;
 extern volatile int     g_logo_style;
+extern volatile int     g_oled_bright;
+extern volatile int     g_saver_timeout;
 extern volatile bool    g_replay_logo;
 
 #endif

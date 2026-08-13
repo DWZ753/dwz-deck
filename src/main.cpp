@@ -172,6 +172,8 @@ volatile bool          g_screensaver  = false;
 volatile int           g_cube_speed   = 50;
 volatile int           g_cube_mode    = 0;   /* 0=Cube 1=Tetra 2=Octa 3=Icosa 4=Random */
 volatile int           g_logo_style   = 0;   /* 0=流星雨 1=烟花 2=随机 */
+volatile int           g_oled_bright  = 100; /* OLED 对比度 0-100% */
+volatile int           g_saver_timeout = 0;  /* 0=10s 1=30s 2=60s 3=关闭 */
 volatile bool          g_replay_logo  = false;
 
 /* Flash 存储脏标志 */
@@ -647,6 +649,8 @@ struct Settings {
     uint8_t  cube_speed;
     uint8_t  cube_mode;
     uint8_t  logo_style;
+    uint8_t  oled_bright;
+    uint8_t  saver_timeout;
 };
 
 static void settings_load()
@@ -664,6 +668,8 @@ static void settings_load()
         g_cube_speed = (s.cube_speed <= 100) ? s.cube_speed : 50;
         g_cube_mode  = (s.cube_mode  <= 4)   ? s.cube_mode  : 0;
         g_logo_style = (s.logo_style <= 2)   ? s.logo_style : 0;
+        g_oled_bright  = (s.oled_bright  <= 100) ? s.oled_bright  : 100;
+        g_saver_timeout = (s.saver_timeout <= 3) ? s.saver_timeout : 0;
     }
     /* Magic 不匹配则保留编译期默认值 */
 }
@@ -679,6 +685,8 @@ static void settings_save()
     s.cube_speed = (uint8_t)g_cube_speed;
     s.cube_mode  = (uint8_t)g_cube_mode;
     s.logo_style = (uint8_t)g_logo_style;
+    s.oled_bright  = (uint8_t)g_oled_bright;
+    s.saver_timeout = (uint8_t)g_saver_timeout;
 
     EEPROM.put(0, s);
     EEPROM.commit();
@@ -940,6 +948,7 @@ void setup1()
     Wire.setSCL(SCL_PIN);
     Wire.begin();
     u8g2.begin();
+    u8g2.setContrast(map(g_oled_bright, 0, 100, 0, 255));
     oled_logo_animation();
 
     /* LED */
@@ -977,10 +986,12 @@ void loop1()
             g_mode = MODE_CALCULATOR;
     }
 
-    /* 屏保检测: 非菜单模式下空闲 15 秒触发 */
+    /* 屏保检测: 非菜单模式下空闲超时触发 (可配置: 10s/30s/60s/关) */
+    static const unsigned long SAVER_TIMEOUTS[] = {10000, 30000, 60000};
     if (!menu.is_open && !menu.animating) {
         if (!g_screensaver
-            && (millis() - g_activity_ms > 15000)
+            && g_saver_timeout < 3
+            && (millis() - g_activity_ms > SAVER_TIMEOUTS[g_saver_timeout])
             && g_usb_mounted) {
             g_screensaver = true;
         }

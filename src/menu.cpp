@@ -28,10 +28,11 @@ const MenuItem menuMain[] = {
 const MenuItem menuLED[] = {
     {"Effect",       MENU_SUBMENU},
     {"Bright",       MENU_SUBMENU},
+    {"OLED",         MENU_SUBMENU},
     {"Speed",        MENU_SUBMENU},
     {"Back",         MENU_BACK},
 };
-#define MENU_LED_COUNT 4
+#define MENU_LED_COUNT 5
 
 const MenuItem menuLEDMode[] = {
     {"Rainbow",    MENU_ACTION},
@@ -75,9 +76,19 @@ const MenuItem menuLogoStyle[] = {
 const MenuItem menuCube[] = {
     {"Speed",       MENU_SUBMENU},
     {"Shape",       MENU_SUBMENU},
+    {"Timeout",     MENU_SUBMENU},
     {"Back",        MENU_BACK},
 };
-#define MENU_CUBE_COUNT 3
+#define MENU_CUBE_COUNT 4
+
+const MenuItem menuSaverTimeout[] = {
+    {"10 sec",      MENU_ACTION},
+    {"30 sec",      MENU_ACTION},
+    {"60 sec",      MENU_ACTION},
+    {"Off",         MENU_ACTION},
+    {"Back",        MENU_BACK},
+};
+#define MENU_SAVER_TIMEOUT_COUNT 5
 
 const MenuItem menuSysInfo[] = {
     {"DWZ Deck v3.0",    MENU_ACTION},
@@ -95,6 +106,7 @@ const MenuPageDef menuPages[] = {
     {menuLEDMode,       MENU_LEDMODE_COUNT},   /* PAGE_LED_MODE */
     {nullptr,           0},                    /* PAGE_LED_BRIGHTNESS */
     {nullptr,           0},                    /* PAGE_LED_SPEED */
+    {nullptr,           0},                    /* PAGE_LED_OLED */
     {menuKeyLayer,      MENU_LAYER_COUNT},     /* PAGE_KEY_LAYER */
     {menuSysInfo,       MENU_INFO_COUNT},      /* PAGE_SYSINFO */
     {menuAnim,          MENU_ANIM_COUNT},      /* PAGE_ANIM */
@@ -103,6 +115,7 @@ const MenuPageDef menuPages[] = {
     {nullptr,           0},                    /* PAGE_SHAPE_PREVIEW */
     {menuLogo,          MENU_LOGO_COUNT},      /* PAGE_LOGO_MENU */
     {menuLogoStyle,     MENU_LOGO_STYLE_COUNT},/* PAGE_LOGO_STYLE */
+    {menuSaverTimeout,  MENU_SAVER_TIMEOUT_COUNT},/* PAGE_SAVER_TIMEOUT */
 };
 
 /* 菜单运行时状态 */
@@ -276,6 +289,13 @@ void menu_navigate(int delta)
             if (val < 0)   val = 0;
             if (val > 100) val = 100;
             g_led_speed = val;
+        } else if (menu.active_page == PAGE_LED_OLED) {
+            int val = g_oled_bright + delta * step;
+            if (val < 0)   val = 0;
+            if (val > 100) val = 100;
+            g_oled_bright = val;
+            /* 实时生效, 转编码器立即看到屏幕变化 */
+            u8g2.setContrast(map(g_oled_bright, 0, 100, 0, 255));
         } else if (menu.active_page == PAGE_CUBE_SPEED) {
             int val = g_cube_speed + delta * step;
             if (val < 0)   val = 0;
@@ -333,13 +353,16 @@ void menu_select()
     switch (sel->type) {
         case MENU_SUBMENU: {
             if (menu.active_page == PAGE_LED
-                && (menu.cursor == 1 || menu.cursor == 2)) {
-                /* LED Bright / Speed: 弹窗式滑块
-                 * 返回位置存 popup_ret, 不动 saved 父页链 */
+                && (menu.cursor == 1 || menu.cursor == 2
+                    || menu.cursor == 3)) {
+                /* LED Bright / OLED / Speed: 弹窗式滑块
+                 * 返回位置存 popup_ret, 不动导航栈 */
                 menu.popup_ret_page   = PAGE_LED;
                 menu.popup_ret_cursor = menu.cursor;
                 if (menu.cursor == 1)
                     menu.active_page = PAGE_LED_BRIGHTNESS;
+                else if (menu.cursor == 2)
+                    menu.active_page = PAGE_LED_OLED;
                 else
                     menu.active_page = PAGE_LED_SPEED;
                 menu.cursor        = 0;
@@ -398,6 +421,11 @@ void menu_select()
                     /* Style 子菜单, 光标定位到当前风格 */
                     target = PAGE_LOGO_STYLE;
                     init_cursor = g_logo_style;
+                } else if (menu.active_page == PAGE_CUBE_MENU
+                           && menu.cursor == 2) {
+                    /* Timeout 子菜单, 光标定位到当前超时档 */
+                    target = PAGE_SAVER_TIMEOUT;
+                    init_cursor = g_saver_timeout;
                 }
                 if (target >= 0) {
                     menu_push(menu.active_page, menu.cursor);
@@ -446,6 +474,13 @@ void menu_select()
                      && menu.cursor <= 2) {
                 /* 选择开屏动画风格, 选完弹栈回 Logo 菜单 */
                 g_logo_style = menu.cursor;
+                settings_mark_dirty();
+                acted = true;
+            }
+            else if (menu.active_page == PAGE_SAVER_TIMEOUT
+                     && menu.cursor <= 3) {
+                /* 选择屏保超时档, 选完弹栈回 Screen Saver 菜单 */
+                g_saver_timeout = menu.cursor;
                 settings_mark_dirty();
                 acted = true;
             }

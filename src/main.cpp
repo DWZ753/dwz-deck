@@ -502,21 +502,22 @@ void oled_draw_cubesaver()
     const int   sz  = 9;             /* 与预览一致 */
     const int   pad = 16;            /* sz*1.73≈15.6, 安全边距 */
 
-    /* 随机模式: 每次屏保触发时抽形, 播放中每 ~6s 换到另一随机形状
-     * 调用间隔 >1s 视为新一轮屏保 (millis 跳变) */
-    static int   saver_mode  = -1;
-    static int   morph_timer = 0;
-    static unsigned long last_ms = 0;
+    /* 随机模式: 每次屏保触发时抽形, 播放中每 6s 换到另一随机形状
+     * 用 millis 计时 (loop1 无固定帧率, 帧计数不准)
+     * 调用间隔 >1s 视为新一轮屏保 */
+    static int   saver_mode = -1;
+    static unsigned long last_ms  = 0;   /* 上一帧时刻 (进入判定) */
+    static unsigned long morph_ms = 0;   /* 下次换形时刻 */
     int shape = g_cube_mode;
     if (shape == 4) {
         unsigned long now = millis();
         if (now - last_ms > 1000) {
-            saver_mode  = random(0, 4);
-            morph_timer = 0;
+            saver_mode = random(0, 4);
+            morph_ms   = now;
         }
         last_ms = now;
-        if (++morph_timer >= 180) {   /* ~6s (33ms/帧) */
-            morph_timer = 0;
+        if (now - morph_ms >= 6000) {
+            morph_ms   = now;
             saver_mode  = (saver_mode + 1 + random(0, 3)) % 4;  /* 必换形 */
         }
         shape = saver_mode;
@@ -610,18 +611,19 @@ void oled_draw_shape_preview()
 
     const char* names[] = {"Cube","Tetra","Octa","Icosa","Random"};
 
-    /* Random 项演示: 每 ~2s 自动换形; 浏览离开后下次进入重新随机 */
-    static int demo_mode  = -1;
-    static int demo_timer = 0;
+    /* Random 项演示: 每 2s 自动换形; 浏览离开后下次进入重新随机
+     * 用 millis 计时 (渲染循环无固定帧率) */
+    static int  demo_mode = -1;
+    static unsigned long demo_ms = 0;   /* 下次换形时刻 */
     int shape = g_cube_mode;
     if (shape == 4) {
         if (demo_mode < 0) {
-            demo_mode  = random(0, 4);
-            demo_timer = 0;
+            demo_mode = random(0, 4);
+            demo_ms   = millis();
         }
-        if (++demo_timer >= 60) {   /* ~2s (33ms/帧) */
-            demo_timer = 0;
-            demo_mode  = (demo_mode + 1 + random(0, 3)) % 4;  /* 必换形 */
+        if (millis() - demo_ms >= 2000) {
+            demo_ms   = millis();
+            demo_mode = (demo_mode + 1 + random(0, 3)) % 4;  /* 必换形 */
         }
         shape = demo_mode;
     } else {

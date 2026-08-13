@@ -170,7 +170,7 @@ volatile bool        g_usb_mounted = false;
 volatile unsigned long g_activity_ms  = 0;
 volatile bool          g_screensaver  = false;
 volatile int           g_cube_speed   = 50;
-volatile int           g_cube_mode    = 0;   /* 0=Cube 1=Tetra 2=Octa 3=Icosa 4=Random 5=Dodeca */
+volatile int           g_cube_mode    = 0;   /* 按面数升序: 0=Tetra 1=Cube 2=Octa 3=Dodeca 4=Icosa 5=Random */
 volatile int           g_logo_style   = 0;   /* 0=流星雨 1=烟花 2=随机 */
 volatile int           g_oled_bright  = 100; /* OLED 对比度 0-100% */
 volatile bool          g_contrast_dirty = false; /* Core0 置位, Core1 写屏 */

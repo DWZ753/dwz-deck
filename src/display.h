@@ -24,7 +24,7 @@ void oled_draw_menu(const MenuItem* items, int count,
 void oled_draw_popup(const char* title, int value,
                      bool clear_first = true, bool show = true);
 
-/* 屏保: 旋转多面体 (g_cube_mode==4 随机换形; zoom<1 进场缩放;
+/* 屏保: 旋转多面体 (g_cube_mode==5 随机换形; zoom<1 进场缩放;
  * drift=false 暂停弹跳漂移, 进场/定格期间用) */
 void oled_draw_cubesaver(bool show = true, float zoom = 1.0f, bool drift = true);
 

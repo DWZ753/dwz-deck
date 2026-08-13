@@ -42,18 +42,16 @@ void oled_draw_cubesaver(bool show, float zoom, bool drift)
     static unsigned long last_ms  = 0;   /* 上一帧时刻 (进入判定) */
     static unsigned long morph_ms = 0;   /* 下次换形时刻 */
     int shape = g_cube_mode;
-    if (shape == 4) {
+    if (shape == 5) {
         unsigned long now = millis();
         if (now - last_ms > 1000) {
             saver_mode = random(0, 5);
-            if (saver_mode == 4) saver_mode = 5;   /* 跳过 Random 下标 */
             morph_ms   = now;
         }
         last_ms = now;
         if (now - morph_ms >= 6000) {
             morph_ms   = now;
             saver_mode  = (saver_mode + 1 + random(0, 3)) % 5;  /* 必换形 */
-            if (saver_mode == 4) saver_mode = 5;   /* 跳过 Random 下标 */
         }
         shape = saver_mode;
     } else {
@@ -94,10 +92,10 @@ void oled_draw_cubesaver(bool show, float zoom, bool drift)
         {6,10},{6,15},{6,18},{7,11},{7,15},{7,19},{8,10},{9,11},
         {12,14},{13,15},{16,17},{18,19}};
 
-    const int nv = (shape==0)?8:(shape==1)?4:(shape==2)?6:(shape==5)?20:12;
-    const int ne = (shape==0)?12:(shape==1)?6:(shape==2)?12:30;
+    const int nv = (shape==0)?4:(shape==1)?8:(shape==2)?6:(shape==3)?20:12;
+    const int ne = (shape==0)?6:(shape==1)?12:(shape==2)?12:30;
 
-    float scale = (shape == 2 || shape == 3) ? 1.73f : 1.0f;
+    float scale = (shape == 2 || shape == 4) ? 1.73f : 1.0f;
 
     float cya = cos(saver_ay), sya = sin(saver_ay);
     float cxa = cos(saver_ax), sxa = sin(saver_ax);
@@ -105,13 +103,14 @@ void oled_draw_cubesaver(bool show, float zoom, bool drift)
     int sx[20], sy[20];
     for (int i = 0; i < nv; i++) {
         float vx, vy, vz;
-        if (shape == 0) {
+        if (shape == 0) { vx=tet_v[i][0]; vy=tet_v[i][1]; vz=tet_v[i][2]; }
+        else if (shape == 1) {
             const int8_t cv[8][3] = {{-1,-1,-1},{-1,-1,1},{-1,1,-1},{-1,1,1},
                                      {1,-1,-1},{1,-1,1},{1,1,-1},{1,1,1}};
             vx=cv[i][0]; vy=cv[i][1]; vz=cv[i][2];
-        } else if (shape == 1) { vx=tet_v[i][0]; vy=tet_v[i][1]; vz=tet_v[i][2]; }
+        }
         else if (shape == 2) { vx=oct_v[i][0]; vy=oct_v[i][1]; vz=oct_v[i][2]; }
-        else if (shape == 5) { vx=dd_v[i][0]; vy=dd_v[i][1]; vz=dd_v[i][2]; }
+        else if (shape == 3) { vx=dd_v[i][0]; vy=dd_v[i][1]; vz=dd_v[i][2]; }
         else {
             vx=ico_raw[i][0]; vy=ico_raw[i][1]; vz=ico_raw[i][2];
             float len = sqrt(vx*vx+vy*vy+vz*vz);
@@ -128,13 +127,14 @@ void oled_draw_cubesaver(bool show, float zoom, bool drift)
     u8g2.setDrawColor(1);
     for (int e = 0; e < ne; e++) {
         int a, b;
-        if (shape == 0) {
+        if (shape == 0) { a=tet_e[e][0]; b=tet_e[e][1]; }
+        else if (shape == 1) {
             const uint8_t ed[12][2] = {{0,1},{2,3},{0,2},{1,3},{4,5},{6,7},
                                        {4,6},{5,7},{0,4},{1,5},{2,6},{3,7}};
             a=ed[e][0]; b=ed[e][1];
-        } else if (shape == 1) { a=tet_e[e][0]; b=tet_e[e][1]; }
+        }
         else if (shape == 2) { a=oct_e[e][0]; b=oct_e[e][1]; }
-        else if (shape == 5) { a=dd_e[e][0]; b=dd_e[e][1]; }
+        else if (shape == 3) { a=dd_e[e][0]; b=dd_e[e][1]; }
         else { a=ico_e[e][0]; b=ico_e[e][1]; }
         u8g2.drawLine(sx[a], sy[a], sx[b], sy[b]);
     }
@@ -164,23 +164,21 @@ void oled_draw_shape_preview()
     static float ay = 0.0f, ax = 0.2f;
     const int   cx  = 64, cy = 18, sz = 9;    /* 适中大小 */
 
-    const char* names[] = {"Cube","Tetra","Octa","Icosa","Random","Dodeca"};
+    const char* names[] = {"Tetra","Cube","Octa","Dodeca","Icosa","Random"};
 
     /* Random 项演示: 每 2s 自动换形; 浏览离开后下次进入重新随机
      * 用 millis 计时 (渲染循环无固定帧率) */
     static int  demo_mode;
     static unsigned long demo_ms = 0;   /* 下次换形时刻 */
     int shape = g_cube_mode;
-    if (shape == 4) {
+    if (shape == 5) {
         if (demo_mode < 0) {
             demo_mode = random(0, 5);
-            if (demo_mode == 4) demo_mode = 5;   /* 跳过 Random 下标 */
             demo_ms   = millis();
         }
         if (millis() - demo_ms >= 2000) {
             demo_ms   = millis();
             demo_mode = (demo_mode + 1 + random(0, 3)) % 5;  /* 必换形 */
-            if (demo_mode == 4) demo_mode = 5;   /* 跳过 Random 下标 */
         }
         shape = demo_mode;
     } else {
@@ -224,21 +222,22 @@ void oled_draw_shape_preview()
         {6,10},{6,15},{6,18},{7,11},{7,15},{7,19},{8,10},{9,11},
         {12,14},{13,15},{16,17},{18,19}};
 
-    nv = (shape == 0) ? 8 : (shape == 1) ? 4 : (shape == 2) ? 6 :
-         (shape == 5) ? 20 : 12;
-    ne = (shape == 0) ? 12 : (shape == 1) ? 6 : (shape == 2) ? 12 : 30;
+    nv = (shape == 0) ? 4 : (shape == 1) ? 8 : (shape == 2) ? 6 :
+         (shape == 3) ? 20 : 12;
+    ne = (shape == 0) ? 6 : (shape == 1) ? 12 : (shape == 2) ? 12 : 30;
 
-    float scale = (shape == 2 || shape == 3) ? 1.73f : 1.0f;
+    float scale = (shape == 2 || shape == 4) ? 1.73f : 1.0f;
 
     for (int i = 0; i < nv; i++) {
         float vx, vy, vz;
-        if (shape == 0) {
+        if (shape == 0) { vx=tet_v[i][0]; vy=tet_v[i][1]; vz=tet_v[i][2]; }
+        else if (shape == 1) {
             const int8_t cv[8][3] = {{-1,-1,-1},{-1,-1,1},{-1,1,-1},{-1,1,1},
                                      {1,-1,-1},{1,-1,1},{1,1,-1},{1,1,1}};
             vx=cv[i][0]; vy=cv[i][1]; vz=cv[i][2];
-        } else if (shape == 1) { vx=tet_v[i][0]; vy=tet_v[i][1]; vz=tet_v[i][2]; }
+        }
         else if (shape == 2) { vx=oct_v[i][0]; vy=oct_v[i][1]; vz=oct_v[i][2]; }
-        else if (shape == 5) { vx=dd_v[i][0]; vy=dd_v[i][1]; vz=dd_v[i][2]; }
+        else if (shape == 3) { vx=dd_v[i][0]; vy=dd_v[i][1]; vz=dd_v[i][2]; }
         else {
             vx=ico_raw[i][0]; vy=ico_raw[i][1]; vz=ico_raw[i][2];
             float len = sqrt(vx*vx+vy*vy+vz*vz);
@@ -271,13 +270,14 @@ void oled_draw_shape_preview()
     u8g2.print(">");
     for (int e = 0; e < ne; e++) {
         int a, b;
-        if (shape == 0) {
+        if (shape == 0) { a=tet_e[e][0]; b=tet_e[e][1]; }
+        else if (shape == 1) {
             const uint8_t ed[12][2] = {{0,1},{2,3},{0,2},{1,3},{4,5},{6,7},
                                        {4,6},{5,7},{0,4},{1,5},{2,6},{3,7}};
             a=ed[e][0]; b=ed[e][1];
-        } else if (shape == 1) { a=tet_e[e][0]; b=tet_e[e][1]; }
+        }
         else if (shape == 2) { a=oct_e[e][0]; b=oct_e[e][1]; }
-        else if (shape == 5) { a=dd_e[e][0]; b=dd_e[e][1]; }
+        else if (shape == 3) { a=dd_e[e][0]; b=dd_e[e][1]; }
         else { a=ico_e[e][0]; b=ico_e[e][1]; }
         u8g2.drawLine(sx[a], sy[a], sx[b], sy[b]);
     }

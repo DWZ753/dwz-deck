@@ -33,9 +33,9 @@ void oled_draw_shape_preview();
 /* 开屏 Logo 动画 (按 g_logo_style) */
 void oled_logo_animation();
 
-/* 各模式主屏 + 菜单屏 */
-void oled_show_keyboard(bool show = true);
-void oled_show_calculator(bool show = true);
+/* 各模式主屏 + 菜单屏 (y_off=整体下移量, 菜单退场"下落"用) */
+void oled_show_keyboard(bool show = true, int y_off = 0);
+void oled_show_calculator(bool show = true, int y_off = 0);
 void oled_show_menu();
 
 /* 共享对象/状态 (定义在 main.cpp) */

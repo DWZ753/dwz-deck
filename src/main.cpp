@@ -951,6 +951,8 @@ void setup1()
     u8g2.begin();
     u8g2.setContrast(map(g_oled_bright, 0, 100, 0, 255));
     oled_logo_animation();
+    /* 开屏动画不计入屏保空闲时间 */
+    g_activity_ms = millis();
 
     /* LED */
     strip1.begin();
@@ -980,6 +982,8 @@ void loop1()
     if (g_replay_logo) {
         g_replay_logo = false;
         oled_logo_animation();
+        /* 重放不计入屏保空闲时间 */
+        g_activity_ms = millis();
     }
 
     /* 菜单超时检查 */
@@ -1009,7 +1013,7 @@ void loop1()
         oled_draw_cubesaver();
     } else if (menu.animating) {
         float target = menu.entering ? 0.0f : 32.0f;
-        anim_ease(&menu.slide_offset, target, 38.0f);
+        anim_ease(&menu.slide_offset, target, 65.0f);  /* 入场/退场同速 */
 
         if (menu.entering) {
             /* 入场: 菜单从下方滑入 (纯菜单) */
@@ -1019,11 +1023,21 @@ void loop1()
                 menu.animating    = false;
             }
         } else {
-            /* 退场: 先画主屏, 叠菜单下滑, 一次推屏 */
+            /* 退场: 主屏从顶部下落 (同开屏 logo 下落)
+             * 主屏底边骑在菜单顶边: 整体位移 slide-32 → 0
+             * 绘制顺序: 主屏(下落) → 菜单(下方, 未遮挡部分涂黑) */
+            int line  = (int)menu.slide_offset;
+            int y_off = line - 32;   /* -32 → 0 */
             if (g_usb_mounted)
-                oled_show_keyboard(false);
+                oled_show_keyboard(false, y_off);
             else
-                oled_show_calculator(false);
+                oled_show_calculator(false, y_off);
+
+            if (line < 32) {
+                u8g2.setDrawColor(0);
+                u8g2.drawBox(0, line, 128, 32 - line);
+                u8g2.setDrawColor(1);
+            }
 
             const MenuItem* items = menuPages[menu.active_page].items;
             int cnt = menuPages[menu.active_page].count;

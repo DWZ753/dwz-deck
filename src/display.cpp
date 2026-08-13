@@ -236,32 +236,35 @@ void oled_draw_shape_preview()
     ax += 0.008f; if (ax > TWO_PI) ax -= TWO_PI;
 }
 
-/* ---- 菜单导航图标 (8×8 XBM, 行序 MSB=最左像素) ---- */
+/* ---- 菜单导航图标 (8×8 XBM, 行序 MSB=最左像素)
+ * 6×6 内容核 + 四周 1px 留白, 相邻行不粘连 ---- */
 
-static const uint8_t ICON_BULB[8] = {   /* LED */
-    0x7E, 0x81, 0x91, 0x91, 0x7E, 0x10, 0x10, 0x38};
-static const uint8_t ICON_PLAY[8] = {   /* 播放三角 (Animation/Replay) */
-    0x80, 0xC0, 0xF0, 0xFC, 0xFF, 0xFC, 0xF0, 0xC0};
-static const uint8_t ICON_LAYERS[8] = { /* 层叠 (Key Layer) */
-    0x7E, 0xFF, 0x00, 0x7E, 0xFF, 0x00, 0x7E, 0xFF};
-static const uint8_t ICON_INFO[8] = {   /* i (System Info) */
-    0x3C, 0x18, 0x18, 0x18, 0x18, 0x18, 0x00, 0x3C};
-static const uint8_t ICON_BACK[8] = {   /* ← */
-    0x18, 0x30, 0x60, 0xFF, 0x60, 0x30, 0x18, 0x00};
-static const uint8_t ICON_SPARKLE[8] = {/* 星光 (Effect) */
-    0x18, 0x3C, 0x18, 0xFF, 0xFF, 0x18, 0x3C, 0x18};
-static const uint8_t ICON_SUN[8] = {    /* 太阳 (Bright) */
-    0x24, 0x5A, 0x7E, 0xFF, 0xFF, 0x7E, 0x5A, 0x24};
-static const uint8_t ICON_BOLT[8] = {   /* 闪电 (Speed) */
-    0x70, 0x30, 0x30, 0x78, 0x30, 0x60, 0xC0, 0xC0};
-static const uint8_t ICON_HEX[8] = {    /* 六边形线框 (Screen Saver/Shape) */
-    0x3C, 0x42, 0x81, 0x81, 0x81, 0x81, 0x42, 0x3C};
-static const uint8_t ICON_DIAMOND[8] = {/* 菱形 (Startup Logo/Style) */
-    0x18, 0x3C, 0x7E, 0xFF, 0xFF, 0x7E, 0x3C, 0x18};
-static const uint8_t ICON_PANEL[8] = {   /* 显示屏 (OLED 亮度) */
-    0xFF, 0x81, 0xBD, 0xA5, 0xA5, 0xBD, 0x81, 0xFF};
-static const uint8_t ICON_CLOCK[8] = {   /* 时钟 (屏保超时) */
-    0x7E, 0x81, 0x91, 0x91, 0x91, 0x99, 0x81, 0x7E};
+static const uint8_t ICON_BULB[8] = {   /* LED: 灯泡 */
+    0x00, 0x3C, 0x7E, 0x7E, 0x7E, 0x3C, 0x18, 0x00};
+static const uint8_t ICON_PLAY[8] = {   /* Animation/Replay: 播放三角 */
+    0x00, 0x20, 0x38, 0x3E, 0x7F, 0x7F, 0x3E, 0x00};
+static const uint8_t ICON_KEYBOARD[8] = {/* Key Layer: 键盘键位条 */
+    0x00, 0x7E, 0x4A, 0x4A, 0x4A, 0x4A, 0x7E, 0x00};
+static const uint8_t ICON_INFO[8] = {   /* System Info: i */
+    0x00, 0x30, 0x00, 0x30, 0x30, 0x30, 0x3C, 0x00};
+static const uint8_t ICON_BACK[8] = {   /* Back: ← */
+    0x00, 0x18, 0x38, 0x78, 0xFF, 0x78, 0x38, 0x00};
+static const uint8_t ICON_SPARKLE[8] = {/* Effect: 星光 ✦ */
+    0x00, 0x10, 0x92, 0x54, 0x38, 0x54, 0x92, 0x00};
+static const uint8_t ICON_SUN[8] = {    /* Bright: 太阳 */
+    0x00, 0x42, 0x3C, 0x3C, 0x7E, 0x3C, 0x42, 0x00};
+static const uint8_t ICON_BOLT[8] = {   /* Speed: 闪电 */
+    0x00, 0x3C, 0x18, 0x3C, 0x70, 0x60, 0xF0, 0x00};
+static const uint8_t ICON_PANEL[8] = {  /* OLED: 显示屏 */
+    0x00, 0x7E, 0x42, 0x42, 0x42, 0x42, 0x7E, 0x00};
+static const uint8_t ICON_HOURGLASS[8] = {/* Screen Saver: 沙漏 */
+    0x00, 0x7E, 0x7E, 0x3C, 0x18, 0x3C, 0x7E, 0x00};
+static const uint8_t ICON_TRIANGLE[8] = {/* Shape: 三角 */
+    0x00, 0x18, 0x18, 0x3C, 0x3C, 0x7E, 0x7E, 0x00};
+static const uint8_t ICON_DIAMOND[8] = {/* Startup Logo/Style: 菱形 */
+    0x00, 0x18, 0x3C, 0x7E, 0x7E, 0x3C, 0x18, 0x00};
+static const uint8_t ICON_CLOCK[8] = {  /* Timeout: 时钟 */
+    0x00, 0x3C, 0x42, 0x49, 0x49, 0x5D, 0x42, 0x00};
 
 /* 导航类菜单行 → 图标 (无图标的页/行返回 nullptr) */
 static const uint8_t* menu_icon_for(int page, int idx)
@@ -271,7 +274,7 @@ static const uint8_t* menu_icon_for(int page, int idx)
             switch (idx) {
                 case 0: return ICON_BULB;
                 case 1: return ICON_PLAY;
-                case 2: return ICON_LAYERS;
+                case 2: return ICON_KEYBOARD;
                 case 3: return ICON_INFO;
                 case 4: return ICON_BACK;
             }
@@ -287,15 +290,15 @@ static const uint8_t* menu_icon_for(int page, int idx)
             return nullptr;
         case PAGE_ANIM:
             switch (idx) {
-                case 0: return ICON_HEX;
-                case 1: return ICON_DIAMOND;
+                case 0: return ICON_HOURGLASS;   /* Screen Saver */
+                case 1: return ICON_DIAMOND;     /* Startup Logo */
                 case 2: return ICON_BACK;
             }
             return nullptr;
         case PAGE_CUBE_MENU:
             switch (idx) {
                 case 0: return ICON_BOLT;
-                case 1: return ICON_HEX;
+                case 1: return ICON_TRIANGLE;
                 case 2: return ICON_CLOCK;
                 case 3: return ICON_BACK;
             }
@@ -369,7 +372,7 @@ void oled_draw_menu(const MenuItem* items, int count,
         int tx = 6;
         if (icon && y_top >= 0 && y_top < 32) {
             u8g2.drawXBM(0, y_top, 8, 8, icon);
-            tx = 12;   /* 图标 0-8 + 3px 空隙 */
+            tx = 10;   /* 图标(含留白) + 2px 空隙 */
         }
 
         /* 当前选中项: 左侧 ">" 前缀 (x=6), 文字后移留 2px 空隙;
@@ -476,6 +479,7 @@ void oled_draw_popup(const char* title, int value,
 #define LOGO_REVEAL_FRAMES  57   /* 揭示段总帧数 */
 #define LOGO_REVEAL_TITLE   10   /* 揭示后标题启动帧 */
 #define LOGO_REVEAL_VER     20   /* 揭示后版本号启动帧 */
+#define LOGO_LIFT_FRAMES    28   /* 幕布升起段帧数 (主屏从底部揭示) */
 
 #define FW_ROCKETS        3    /* 轮发火箭数 */
 #define FW_PARTICLES      40   /* 烟花粒子池 (容纳 3 次爆炸并存) */
@@ -586,7 +590,7 @@ void oled_logo_animation()
                 if (sy[i] <= 44.0f) done = false;
             if (done) {
                 reveal_at = f;
-                total_frames = f + LOGO_REVEAL_FRAMES;
+                total_frames = f + LOGO_REVEAL_FRAMES + LOGO_LIFT_FRAMES;
             }
         }
         } else {
@@ -683,18 +687,19 @@ void oled_logo_animation()
                 if (fw_ry[r] <= 33.0f) done = false;
             if (done) {
                 reveal_at = f;
-                total_frames = f + LOGO_REVEAL_FRAMES;
+                total_frames = f + LOGO_REVEAL_FRAMES + LOGO_LIFT_FRAMES;
             }
         }
         }
 
-        /* --- 揭示段 (相对 reveal_at: 黑幕→标题→版本→定格)
-         * 烟花模式下 reveal_at=-1 表示尚未触发, 不绘制 */
+        /* --- 揭示段 + 幕布升起段 (相对 reveal_at)
+         * 揭示: 黑幕→标题→版本→定格 (reveal_at=-1 表示尚未触发)
+         * 升起: 主屏在幕布之下, 黑幕自下而上回收 (像幕布拉开) */
         int rf = f - reveal_at;
-        if (reveal_at >= 0 && rf >= 0) {
+        if (reveal_at >= 0 && rf >= 0 && rf < LOGO_REVEAL_FRAMES) {
             /* 黑幕 (揭示段帧0起, speed=65, 约0.5s 盖满全屏) */
             anim_ease(&curtain, 0.0f, 65.0f);
-            int cover = (int)curtain + 34;
+            int cover = (int)(curtain + 34.0f);
             if (cover < 0) cover = 0;
             if (cover > 32) cover = 32;
             u8g2.setDrawColor(0);
@@ -717,6 +722,43 @@ void oled_logo_animation()
                 u8g2.setCursor((int)ver_x, 30);
                 u8g2.print("v3.0");
             }
+        } else if (reveal_at >= 0 && rf >= LOGO_REVEAL_FRAMES) {
+            /* 幕布升起: 先画底景 (菜单重放=当前菜单页, 否则主屏),
+             * 黑幕与标题一起上升退出
+             * 目标定在屏幕上方 -40: 可见部分提前收完, 缓动尾段留在屏外 */
+            if (menu.is_open) {
+                const MenuItem* items = menuPages[menu.active_page].items;
+                oled_draw_menu(items, menuPages[menu.active_page].count,
+                               menu.cursor, menu.scroll_offset,
+                               false, false, -1, menu.active_page);
+            } else if (g_usb_mounted) {
+                oled_show_keyboard(false);
+            } else {
+                oled_show_calculator(false);
+            }
+
+            anim_ease(&curtain, -40.0f, 55.0f);
+            anim_ease(&title_y, -20.0f, 55.0f);
+            anim_ease(&ver_x, 130.0f, 40.0f);
+
+            int cover = (int)(curtain + 34.0f);
+            if (cover < 0) cover = 0;
+            if (cover > 32) cover = 32;
+            u8g2.setDrawColor(0);
+            if (cover > 0) u8g2.drawBox(0, 0, 128, cover);
+            u8g2.setDrawColor(1);
+            if (cover > 0 && cover < 32) u8g2.drawHLine(0, cover, 128);
+
+            u8g2.setFont(FONT_LARGE);
+            int tw = u8g2.getStrWidth("DWZ Deck");
+            u8g2.setCursor((128 - tw) / 2, (int)title_y);
+            u8g2.print("DWZ Deck");
+
+            u8g2.setFont(FONT_SMALL);
+            if ((int)ver_x < 128) {
+                u8g2.setCursor((int)ver_x, 30);
+                u8g2.print("v3.0");
+            }
         }
 
         u8g2.sendBuffer();
@@ -724,52 +766,52 @@ void oled_logo_animation()
     }
 }
 
-void oled_show_keyboard(bool show)
+void oled_show_keyboard(bool show, int y_off)
 {
     u8g2.clearBuffer();
     u8g2.setFont(FONT_SMALL);
     u8g2.setDrawColor(1);
 
     /* 行 0: 产品名(左) + 层标签·USB(右) */
-    u8g2.setCursor(0, 7);
+    u8g2.setCursor(0, 7 + y_off);
     u8g2.print("DWZ DECK");
 
     const char* layer_tag = (g_layer == LAYER_NUMPAD) ? "NUM" : " FN";
     int tag_w = (int)u8g2.getStrWidth(layer_tag) + 10;
-    u8g2.setCursor(128 - tag_w, 7);
+    u8g2.setCursor(128 - tag_w, 7 + y_off);
     u8g2.print(layer_tag);
 
     u8g2.setDrawColor(g_usb_mounted ? 1 : 0);
-    u8g2.drawDisc(128 - tag_w - 6, 3, 2);
+    u8g2.drawDisc(128 - tag_w - 6, 3 + y_off, 2);
     u8g2.setDrawColor(1);
-    u8g2.drawCircle(128 - tag_w - 6, 3, 2);
+    u8g2.drawCircle(128 - tag_w - 6, 3 + y_off, 2);
 
     /* 行 1: Speed 标签+进度条+数值  (bar 起始 x=52 w=48 值 x=106) */
-    u8g2.setCursor(0, 15);
+    u8g2.setCursor(0, 15 + y_off);
     u8g2.print("Speed");
 
     int spd_bar_w = map(g_led_speed, 0, 100, 0, 48);
-    u8g2.drawRFrame(52, 11, 48, 4, 2);
-    if (spd_bar_w > 2) u8g2.drawRBox(53, 12, spd_bar_w - 2, 2, 1);
+    u8g2.drawRFrame(52, 11 + y_off, 48, 4, 2);
+    if (spd_bar_w > 2) u8g2.drawRBox(53, 12 + y_off, spd_bar_w - 2, 2, 1);
 
     char buf[8];
     snprintf(buf, sizeof(buf), "%d%%", g_led_speed);
-    u8g2.setCursor(106, 15);
+    u8g2.setCursor(106, 15 + y_off);
     u8g2.print(buf);
 
     /* 行 2: Bright 标签+进度条+数值 */
-    u8g2.setCursor(0, 23);
+    u8g2.setCursor(0, 23 + y_off);
     u8g2.print("Bright");
     int br_bar_w = map(g_brightness, 0, 100, 0, 48);
-    u8g2.drawRFrame(52, 19, 48, 4, 2);
-    if (br_bar_w > 2) u8g2.drawRBox(53, 20, br_bar_w - 2, 2, 1);
+    u8g2.drawRFrame(52, 19 + y_off, 48, 4, 2);
+    if (br_bar_w > 2) u8g2.drawRBox(53, 20 + y_off, br_bar_w - 2, 2, 1);
 
     snprintf(buf, sizeof(buf), "%d%%", g_brightness);
-    u8g2.setCursor(106, 23);
+    u8g2.setCursor(106, 23 + y_off);
     u8g2.print(buf);
 
     /* 行 3: 当前灯效模式 */
-    u8g2.setCursor(0, 31);
+    u8g2.setCursor(0, 31 + y_off);
     const char* mn[] = {"Rainbow","Marquee","Breath","Meteor","Flash"};
     u8g2.print("LED:");
     u8g2.print(mn[g_led_mode]);
@@ -778,19 +820,19 @@ void oled_show_keyboard(bool show)
 }
 
 /* 计算器模式界面 */
-void oled_show_calculator(bool show)
+void oled_show_calculator(bool show, int y_off)
 {
     u8g2.clearBuffer();
     u8g2.setFont(FONT_SMALL);
     u8g2.setDrawColor(1);
 
     /* 行 0: 标题(左) + 亮度(右) */
-    u8g2.setCursor(0, 7);
+    u8g2.setCursor(0, 7 + y_off);
     u8g2.print("CALC");
 
     char buf[8];
     snprintf(buf, sizeof(buf), "%d%%", g_brightness);
-    u8g2.setCursor(128 - (int)u8g2.getStrWidth(buf), 7);
+    u8g2.setCursor(128 - (int)u8g2.getStrWidth(buf), 7 + y_off);
     u8g2.print(buf);
 
     /* 行 1-2: 结果居中 */
@@ -798,21 +840,21 @@ void oled_show_calculator(bool show)
         u8g2.setFont(FONT_LARGE);
         int cx = (128 - (int)u8g2.getStrWidth(calc_display.c_str())) / 2;
         if (cx < 0) cx = 0;
-        u8g2.setCursor(cx, 22);
+        u8g2.setCursor(cx, 22 + y_off);
         u8g2.print(calc_display);
     } else if (calc_display.length() <= 21) {
         u8g2.setFont(FONT_SMALL);
-        u8g2.setCursor(2, 22);
+        u8g2.setCursor(2, 22 + y_off);
         u8g2.print(calc_display);
     } else {
         u8g2.setFont(FONT_SMALL);
-        u8g2.setCursor(2, 22);
+        u8g2.setCursor(2, 22 + y_off);
         u8g2.print("...");
     }
 
     /* 行 3: 提示 */
     u8g2.setFont(FONT_SMALL);
-    u8g2.setCursor(0, 31);
+    u8g2.setCursor(0, 31 + y_off);
     u8g2.print("Press:AC  Hold:Menu");
 
     if (show) u8g2.sendBuffer();

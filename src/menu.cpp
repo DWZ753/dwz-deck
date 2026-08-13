@@ -270,7 +270,7 @@ void menu_navigate(int delta)
 
     /* 形状预览页: 编码器旋转直接切换形状 */
     if (menu.active_page == PAGE_SHAPE_PREVIEW) {
-        g_cube_mode = (g_cube_mode + delta + 5) % 5;
+        g_cube_mode = (g_cube_mode + delta + 6) % 6;
         menu.last_activity_ms = millis();
         return;
     }

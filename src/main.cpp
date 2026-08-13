@@ -170,7 +170,7 @@ volatile bool        g_usb_mounted = false;
 volatile unsigned long g_activity_ms  = 0;
 volatile bool          g_screensaver  = false;
 volatile int           g_cube_speed   = 50;
-volatile int           g_cube_mode    = 0;   /* 0=Cube 1=Tetra 2=Octa 3=Icosa 4=Random */
+volatile int           g_cube_mode    = 0;   /* 0=Cube 1=Tetra 2=Octa 3=Icosa 4=Random 5=Dodeca */
 volatile int           g_logo_style   = 0;   /* 0=流星雨 1=烟花 2=随机 */
 volatile int           g_oled_bright  = 100; /* OLED 对比度 0-100% */
 volatile bool          g_contrast_dirty = false; /* Core0 置位, Core1 写屏 */
@@ -667,7 +667,7 @@ static void settings_load()
         g_brightness = (s.brightness <= 100) ? s.brightness : 20;
         g_layer      = (KeyLayer)s.key_layer;
         g_cube_speed = (s.cube_speed <= 100) ? s.cube_speed : 50;
-        g_cube_mode  = (s.cube_mode  <= 4)   ? s.cube_mode  : 0;
+        g_cube_mode  = (s.cube_mode  <= 5)   ? s.cube_mode  : 0;
         g_logo_style = (s.logo_style <= 2)   ? s.logo_style : 0;
         g_oled_bright  = (s.oled_bright  <= 100) ? s.oled_bright  : 100;
         g_saver_timeout = (s.saver_timeout <= 3) ? s.saver_timeout : 0;
@@ -999,18 +999,64 @@ void loop1()
 
     /* 屏保检测: 非菜单模式下空闲超时触发 (可配置: 10s/30s/60s/关) */
     static const unsigned long SAVER_TIMEOUTS[] = {10000, 30000, 60000};
+    static bool  saver_entering = false;   /* 进场过渡进行中 */
+    static float saver_slide    = 0.0f;    /* 主屏下落偏移 0→32 */
+    static float saver_zoom     = 0.2f;    /* 多边形缩放 0.2→1 (独立缓动, 慢于下落) */
+    static bool  saver_hold     = false;   /* 定格展示: 放大完成后暂停漂移 */
+    static unsigned long saver_hold_until = 0;
     if (!menu.is_open && !menu.animating) {
         if (!g_screensaver
             && g_saver_timeout < 3
             && (millis() - g_activity_ms > SAVER_TIMEOUTS[g_saver_timeout])
             && g_usb_mounted) {
-            g_screensaver = true;
+            g_screensaver  = true;
+            saver_entering = true;
+            saver_slide    = 0.0f;
+            saver_zoom     = 0.2f;
+            oled_cubesaver_reset();   /* 形状归位屏幕中心再登场 */
         }
+    }
+
+    /* 屏保被活动打断时复位过渡状态, 下次触发重新进场 */
+    if (!g_screensaver) {
+        saver_entering = false;
+        saver_hold     = false;
     }
 
     /* 显示 */
     if (g_screensaver) {
-        oled_draw_cubesaver();
+        if (saver_entering) {
+            /* 进场过渡: 屏保场景先画 (清屏) → 主屏叠画下落 (不清) → 一次推屏
+             * 主屏占据行 off..32, 多边形在行 0..off 处被逐渐揭示
+             * 缩放独立缓动: 主屏落过 1/3 后开始放大, 漂移暂停
+             * 缩放目标定在 1.3 (超出满尺寸): 满尺寸在缓动中段即穿过,
+             * 尾段爬行落在不可见的 1.0→1.3 区间 (同幕布目标屏外手法) */
+            anim_ease(&saver_slide, 32.0f, 65.0f);
+            if (saver_slide > 10.0f)
+                anim_ease(&saver_zoom, 1.3f, 200.0f);
+            int off = (int)saver_slide;
+            float zoom = (saver_zoom > 1.0f) ? 1.0f : saver_zoom;
+
+            oled_draw_cubesaver(false, zoom, false);
+            if (g_usb_mounted)
+                oled_show_keyboard(false, off, false);
+            else
+                oled_show_calculator(false, off, false);
+            u8g2.sendBuffer();
+
+            if (saver_slide > 31.5f && saver_zoom >= 1.0f) {
+                saver_slide      = 0.0f;
+                saver_entering   = false;
+                saver_hold       = true;
+                saver_hold_until = millis() + 500;  /* 定格展示再开始漂移 */
+            }
+        } else if (saver_hold) {
+            /* 定格: 原地旋转展示, 不漂移 */
+            oled_draw_cubesaver(true, 1.0f, false);
+            if (millis() >= saver_hold_until) saver_hold = false;
+        } else {
+            oled_draw_cubesaver();
+        }
     } else if (menu.animating) {
         float target = menu.entering ? 0.0f : 32.0f;
         anim_ease(&menu.slide_offset, target, 65.0f);  /* 入场/退场同速 */

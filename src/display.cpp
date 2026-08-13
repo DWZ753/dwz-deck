@@ -15,14 +15,23 @@ void anim_ease(float *a, float target, float speed)
     *a += diff / (speed / 10.0f);
 }
 
-/* 编码器加速: 根据旋转间隔动态调整步长
- * 连续快速旋转 (>3次/300ms) 步长从1逐步增大到5 */
+/* 屏保形状状态 (文件级 static, 供复位函数共享)
+ * saver_ay/ax=旋转角  saver_cx/cy=弹跳中心  saver_vx/vy=漂移速度 */
+static float saver_ay = 0.0f, saver_ax = 0.3f;
+static float saver_cx = 64.0f, saver_cy = 16.0f;
+static float saver_vx = 0.18f, saver_vy = 0.12f;
 
-void oled_draw_cubesaver()
+/* 屏保进场: 形状归位屏幕中心再登场 (缩放进入由 zoom 参数完成) */
+void oled_cubesaver_reset()
 {
-    static float ay = 0.0f, ax = 0.3f;
-    static float cx = 64.0f, cy = 16.0f;
-    static float vx = 0.18f, vy = 0.12f;
+    saver_cx = 64.0f;
+    saver_cy = 16.0f;
+    saver_vx = 0.18f;
+    saver_vy = 0.12f;
+}
+
+void oled_draw_cubesaver(bool show, float zoom, bool drift)
+{
     const int   sz  = 9;             /* 与预览一致 */
     const int   pad = 16;            /* sz*1.73≈15.6, 安全边距 */
 
@@ -36,13 +45,15 @@ void oled_draw_cubesaver()
     if (shape == 4) {
         unsigned long now = millis();
         if (now - last_ms > 1000) {
-            saver_mode = random(0, 4);
+            saver_mode = random(0, 5);
+            if (saver_mode == 4) saver_mode = 5;   /* 跳过 Random 下标 */
             morph_ms   = now;
         }
         last_ms = now;
         if (now - morph_ms >= 6000) {
             morph_ms   = now;
-            saver_mode  = (saver_mode + 1 + random(0, 3)) % 4;  /* 必换形 */
+            saver_mode  = (saver_mode + 1 + random(0, 3)) % 5;  /* 必换形 */
+            if (saver_mode == 4) saver_mode = 5;   /* 跳过 Random 下标 */
         }
         shape = saver_mode;
     } else {
@@ -67,15 +78,31 @@ void oled_draw_cubesaver()
         {3,9},{3,11},{4,6},{4,8},{4,9},{5,7},{5,8},{5,9},
         {6,10},{6,11},{7,10},{7,11},{8,9},{10,11}};
 
-    const int nv = (shape==0)?8:(shape==1)?4:(shape==2)?6:12;
+    /* 正十二面体: 20 顶点 (半径√3, 无需归一化) + 30 棱, 每顶点度 3 */
+    const float dd_v[20][3] = {
+        {-1,-1,-1},{-1,-1,1},{-1,1,-1},{-1,1,1},
+        {1,-1,-1},{1,-1,1},{1,1,-1},{1,1,1},
+        {0,-0.618f,-1.618f},{0,-0.618f,1.618f},
+        {0,0.618f,-1.618f},{0,0.618f,1.618f},
+        {-0.618f,-1.618f,0},{-0.618f,1.618f,0},
+        {0.618f,-1.618f,0},{0.618f,1.618f,0},
+        {-1.618f,0,-0.618f},{-1.618f,0,0.618f},
+        {1.618f,0,-0.618f},{1.618f,0,0.618f}};
+    const uint8_t dd_e[30][2] = {
+        {0,8},{0,12},{0,16},{1,9},{1,12},{1,17},{2,10},{2,13},{2,16},
+        {3,11},{3,13},{3,17},{4,8},{4,14},{4,18},{5,9},{5,14},{5,19},
+        {6,10},{6,15},{6,18},{7,11},{7,15},{7,19},{8,10},{9,11},
+        {12,14},{13,15},{16,17},{18,19}};
+
+    const int nv = (shape==0)?8:(shape==1)?4:(shape==2)?6:(shape==5)?20:12;
     const int ne = (shape==0)?12:(shape==1)?6:(shape==2)?12:30;
 
     float scale = (shape == 2 || shape == 3) ? 1.73f : 1.0f;
 
-    float cya = cos(ay), sya = sin(ay);
-    float cxa = cos(ax), sxa = sin(ax);
+    float cya = cos(saver_ay), sya = sin(saver_ay);
+    float cxa = cos(saver_ax), sxa = sin(saver_ax);
 
-    int sx[12], sy[12];
+    int sx[20], sy[20];
     for (int i = 0; i < nv; i++) {
         float vx, vy, vz;
         if (shape == 0) {
@@ -84,6 +111,7 @@ void oled_draw_cubesaver()
             vx=cv[i][0]; vy=cv[i][1]; vz=cv[i][2];
         } else if (shape == 1) { vx=tet_v[i][0]; vy=tet_v[i][1]; vz=tet_v[i][2]; }
         else if (shape == 2) { vx=oct_v[i][0]; vy=oct_v[i][1]; vz=oct_v[i][2]; }
+        else if (shape == 5) { vx=dd_v[i][0]; vy=dd_v[i][1]; vz=dd_v[i][2]; }
         else {
             vx=ico_raw[i][0]; vy=ico_raw[i][1]; vz=ico_raw[i][2];
             float len = sqrt(vx*vx+vy*vy+vz*vz);
@@ -92,8 +120,8 @@ void oled_draw_cubesaver()
         float rx = vx * cya + vz * sya;
         float rz = -vx * sya + vz * cya;
         float ty = vy * cxa - rz * sxa;
-        sx[i] = (int)cx + (int)(rx * sz * scale);
-        sy[i] = (int)cy - (int)(ty * sz * scale);
+        sx[i] = (int)saver_cx + (int)(rx * sz * scale * zoom);
+        sy[i] = (int)saver_cy - (int)(ty * sz * scale * zoom);
     }
 
     u8g2.clearBuffer();
@@ -106,6 +134,7 @@ void oled_draw_cubesaver()
             a=ed[e][0]; b=ed[e][1];
         } else if (shape == 1) { a=tet_e[e][0]; b=tet_e[e][1]; }
         else if (shape == 2) { a=oct_e[e][0]; b=oct_e[e][1]; }
+        else if (shape == 5) { a=dd_e[e][0]; b=dd_e[e][1]; }
         else { a=ico_e[e][0]; b=ico_e[e][1]; }
         u8g2.drawLine(sx[a], sy[a], sx[b], sy[b]);
     }
@@ -113,18 +142,20 @@ void oled_draw_cubesaver()
 
     /* 速度: 0-100% → 每帧 0.01~0.06 弧度 */
     float spd = map(g_cube_speed, 0, 100, 40, 8) / 1000.0f;
-    ay += spd;
-    ax += spd * 0.37f;  /* X 轴慢 ~2.7 倍, 产生晃动摇摆感 */
-    if (ay > TWO_PI) ay -= TWO_PI;
-    if (ax > TWO_PI) ax -= TWO_PI;
+    saver_ay += spd;
+    saver_ax += spd * 0.37f;  /* X 轴慢 ~2.7 倍, 产生晃动摇摆感 */
+    if (saver_ay > TWO_PI) saver_ay -= TWO_PI;
+    if (saver_ax > TWO_PI) saver_ax -= TWO_PI;
 
-    /* 弹跳漂移: 碰到边缘反弹 */
-    cx += vx;
-    cy += vy;
-    if (cx < pad)       { cx = pad;       vx = -vx; }
-    if (cx > 128 - pad) { cx = 128 - pad; vx = -vx; }
-    if (cy < pad)       { cy = pad;       vy = -vy; }
-    if (cy > 32 - pad)  { cy = 32 - pad;  vy = -vy; }
+    /* 弹跳漂移: 碰到边缘反弹 (进场/定格期间 drift=false 暂停) */
+    if (drift) {
+        saver_cx += saver_vx;
+        saver_cy += saver_vy;
+        if (saver_cx < pad)       { saver_cx = pad;       saver_vx = -saver_vx; }
+        if (saver_cx > 128 - pad) { saver_cx = 128 - pad; saver_vx = -saver_vx; }
+        if (saver_cy < pad)       { saver_cy = pad;       saver_vy = -saver_vy; }
+        if (saver_cy > 32 - pad)  { saver_cy = 32 - pad;  saver_vy = -saver_vy; }
+    }
 }
 
 /* 形状预览: 居中旋转多面体 + 名称 + <> 指示 */
@@ -133,7 +164,7 @@ void oled_draw_shape_preview()
     static float ay = 0.0f, ax = 0.2f;
     const int   cx  = 64, cy = 18, sz = 9;    /* 适中大小 */
 
-    const char* names[] = {"Cube","Tetra","Octa","Icosa","Random"};
+    const char* names[] = {"Cube","Tetra","Octa","Icosa","Random","Dodeca"};
 
     /* Random 项演示: 每 2s 自动换形; 浏览离开后下次进入重新随机
      * 用 millis 计时 (渲染循环无固定帧率) */
@@ -142,12 +173,14 @@ void oled_draw_shape_preview()
     int shape = g_cube_mode;
     if (shape == 4) {
         if (demo_mode < 0) {
-            demo_mode = random(0, 4);
+            demo_mode = random(0, 5);
+            if (demo_mode == 4) demo_mode = 5;   /* 跳过 Random 下标 */
             demo_ms   = millis();
         }
         if (millis() - demo_ms >= 2000) {
             demo_ms   = millis();
-            demo_mode = (demo_mode + 1 + random(0, 3)) % 4;  /* 必换形 */
+            demo_mode = (demo_mode + 1 + random(0, 3)) % 5;  /* 必换形 */
+            if (demo_mode == 4) demo_mode = 5;   /* 跳过 Random 下标 */
         }
         shape = demo_mode;
     } else {
@@ -157,7 +190,7 @@ void oled_draw_shape_preview()
     int nv, ne;
     float cya = cos(ay), sya = sin(ay);
     float cxa = cos(ax), sxa = sin(ax);
-    int sx[12], sy[12];
+    int sx[20], sy[20];
 
     const int8_t tet_v[4][3] = {{1,1,1},{1,-1,-1},{-1,1,-1},{-1,-1,1}};
     const uint8_t tet_e[6][2] = {{0,1},{0,2},{0,3},{1,2},{1,3},{2,3}};
@@ -175,7 +208,24 @@ void oled_draw_shape_preview()
         {3,9},{3,11},{4,6},{4,8},{4,9},{5,7},{5,8},{5,9},
         {6,10},{6,11},{7,10},{7,11},{8,9},{10,11}};
 
-    nv = (shape == 0) ? 8 : (shape == 1) ? 4 : (shape == 2) ? 6 : 12;
+    /* 正十二面体: 20 顶点 (半径√3, 无需归一化) + 30 棱, 每顶点度 3 */
+    const float dd_v[20][3] = {
+        {-1,-1,-1},{-1,-1,1},{-1,1,-1},{-1,1,1},
+        {1,-1,-1},{1,-1,1},{1,1,-1},{1,1,1},
+        {0,-0.618f,-1.618f},{0,-0.618f,1.618f},
+        {0,0.618f,-1.618f},{0,0.618f,1.618f},
+        {-0.618f,-1.618f,0},{-0.618f,1.618f,0},
+        {0.618f,-1.618f,0},{0.618f,1.618f,0},
+        {-1.618f,0,-0.618f},{-1.618f,0,0.618f},
+        {1.618f,0,-0.618f},{1.618f,0,0.618f}};
+    const uint8_t dd_e[30][2] = {
+        {0,8},{0,12},{0,16},{1,9},{1,12},{1,17},{2,10},{2,13},{2,16},
+        {3,11},{3,13},{3,17},{4,8},{4,14},{4,18},{5,9},{5,14},{5,19},
+        {6,10},{6,15},{6,18},{7,11},{7,15},{7,19},{8,10},{9,11},
+        {12,14},{13,15},{16,17},{18,19}};
+
+    nv = (shape == 0) ? 8 : (shape == 1) ? 4 : (shape == 2) ? 6 :
+         (shape == 5) ? 20 : 12;
     ne = (shape == 0) ? 12 : (shape == 1) ? 6 : (shape == 2) ? 12 : 30;
 
     float scale = (shape == 2 || shape == 3) ? 1.73f : 1.0f;
@@ -188,6 +238,7 @@ void oled_draw_shape_preview()
             vx=cv[i][0]; vy=cv[i][1]; vz=cv[i][2];
         } else if (shape == 1) { vx=tet_v[i][0]; vy=tet_v[i][1]; vz=tet_v[i][2]; }
         else if (shape == 2) { vx=oct_v[i][0]; vy=oct_v[i][1]; vz=oct_v[i][2]; }
+        else if (shape == 5) { vx=dd_v[i][0]; vy=dd_v[i][1]; vz=dd_v[i][2]; }
         else {
             vx=ico_raw[i][0]; vy=ico_raw[i][1]; vz=ico_raw[i][2];
             float len = sqrt(vx*vx+vy*vy+vz*vz);
@@ -226,6 +277,7 @@ void oled_draw_shape_preview()
             a=ed[e][0]; b=ed[e][1];
         } else if (shape == 1) { a=tet_e[e][0]; b=tet_e[e][1]; }
         else if (shape == 2) { a=oct_e[e][0]; b=oct_e[e][1]; }
+        else if (shape == 5) { a=dd_e[e][0]; b=dd_e[e][1]; }
         else { a=ico_e[e][0]; b=ico_e[e][1]; }
         u8g2.drawLine(sx[a], sy[a], sx[b], sy[b]);
     }
@@ -766,9 +818,9 @@ void oled_logo_animation()
     }
 }
 
-void oled_show_keyboard(bool show, int y_off)
+void oled_show_keyboard(bool show, int y_off, bool clear_first)
 {
-    u8g2.clearBuffer();
+    if (clear_first) u8g2.clearBuffer();
     u8g2.setFont(FONT_SMALL);
     u8g2.setDrawColor(1);
 
@@ -820,9 +872,9 @@ void oled_show_keyboard(bool show, int y_off)
 }
 
 /* 计算器模式界面 */
-void oled_show_calculator(bool show, int y_off)
+void oled_show_calculator(bool show, int y_off, bool clear_first)
 {
-    u8g2.clearBuffer();
+    if (clear_first) u8g2.clearBuffer();
     u8g2.setFont(FONT_SMALL);
     u8g2.setDrawColor(1);
 

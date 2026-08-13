@@ -24,8 +24,12 @@ void oled_draw_menu(const MenuItem* items, int count,
 void oled_draw_popup(const char* title, int value,
                      bool clear_first = true, bool show = true);
 
-/* 屏保: 旋转多面体 (g_cube_mode==4 时随机换形) */
-void oled_draw_cubesaver();
+/* 屏保: 旋转多面体 (g_cube_mode==4 随机换形; zoom<1 进场缩放;
+ * drift=false 暂停弹跳漂移, 进场/定格期间用) */
+void oled_draw_cubesaver(bool show = true, float zoom = 1.0f, bool drift = true);
+
+/* 屏保进场: 形状归位屏幕中心 (过渡开始前调用) */
+void oled_cubesaver_reset();
 
 /* 形状预览页 */
 void oled_draw_shape_preview();
@@ -33,9 +37,10 @@ void oled_draw_shape_preview();
 /* 开屏 Logo 动画 (按 g_logo_style) */
 void oled_logo_animation();
 
-/* 各模式主屏 + 菜单屏 (y_off=整体下移量, 菜单退场"下落"用) */
-void oled_show_keyboard(bool show = true, int y_off = 0);
-void oled_show_calculator(bool show = true, int y_off = 0);
+/* 各模式主屏 + 菜单屏 (y_off=整体下移量, 下落退场用;
+ * clear_first=false 时不清屏, 供过渡帧叠画) */
+void oled_show_keyboard(bool show = true, int y_off = 0, bool clear_first = true);
+void oled_show_calculator(bool show = true, int y_off = 0, bool clear_first = true);
 void oled_show_menu();
 
 /* 共享对象/状态 (定义在 main.cpp) */

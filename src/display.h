@@ -14,11 +14,11 @@
 /* 缓动函数: 先快后慢, 接近目标时减速 (speed 须 >= 35) */
 void anim_ease(float *a, float target, float speed);
 
-/* 菜单绘制 (marked=当前选中项下标, -1=无) */
+/* 菜单绘制 (page=页ID 导航图标, marked=当前选中项下标, -1=无) */
 void oled_draw_menu(const MenuItem* items, int count,
                     int cursor, int scroll,
                     bool show = true, bool clear_first = true,
-                    int marked = -1);
+                    int marked = -1, int page = -1);
 
 /* 弹窗式数值调节器 */
 void oled_draw_popup(const char* title, int value,

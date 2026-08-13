@@ -236,13 +236,84 @@ void oled_draw_shape_preview()
     ax += 0.008f; if (ax > TWO_PI) ax -= TWO_PI;
 }
 
+/* ---- 菜单导航图标 (8×8 XBM, 行序 MSB=最左像素) ---- */
+
+static const uint8_t ICON_BULB[8] = {   /* LED */
+    0x7E, 0x81, 0x91, 0x91, 0x7E, 0x10, 0x10, 0x38};
+static const uint8_t ICON_PLAY[8] = {   /* 播放三角 (Animation/Replay) */
+    0x80, 0xC0, 0xF0, 0xFC, 0xFF, 0xFC, 0xF0, 0xC0};
+static const uint8_t ICON_LAYERS[8] = { /* 层叠 (Key Layer) */
+    0x7E, 0xFF, 0x00, 0x7E, 0xFF, 0x00, 0x7E, 0xFF};
+static const uint8_t ICON_INFO[8] = {   /* i (System Info) */
+    0x3C, 0x18, 0x18, 0x18, 0x18, 0x18, 0x00, 0x3C};
+static const uint8_t ICON_BACK[8] = {   /* ← */
+    0x18, 0x30, 0x60, 0xFF, 0x60, 0x30, 0x18, 0x00};
+static const uint8_t ICON_SPARKLE[8] = {/* 星光 (Effect) */
+    0x18, 0x3C, 0x18, 0xFF, 0xFF, 0x18, 0x3C, 0x18};
+static const uint8_t ICON_SUN[8] = {    /* 太阳 (Bright) */
+    0x24, 0x5A, 0x7E, 0xFF, 0xFF, 0x7E, 0x5A, 0x24};
+static const uint8_t ICON_BOLT[8] = {   /* 闪电 (Speed) */
+    0x70, 0x30, 0x30, 0x78, 0x30, 0x60, 0xC0, 0xC0};
+static const uint8_t ICON_HEX[8] = {    /* 六边形线框 (Screen Saver/Shape) */
+    0x3C, 0x42, 0x81, 0x81, 0x81, 0x81, 0x42, 0x3C};
+static const uint8_t ICON_DIAMOND[8] = {/* 菱形 (Startup Logo/Style) */
+    0x18, 0x3C, 0x7E, 0xFF, 0xFF, 0x7E, 0x3C, 0x18};
+
+/* 导航类菜单行 → 图标 (无图标的页/行返回 nullptr) */
+static const uint8_t* menu_icon_for(int page, int idx)
+{
+    switch (page) {
+        case PAGE_MAIN:
+            switch (idx) {
+                case 0: return ICON_BULB;
+                case 1: return ICON_PLAY;
+                case 2: return ICON_LAYERS;
+                case 3: return ICON_INFO;
+                case 4: return ICON_BACK;
+            }
+            return nullptr;
+        case PAGE_LED:
+            switch (idx) {
+                case 0: return ICON_SPARKLE;
+                case 1: return ICON_SUN;
+                case 2: return ICON_BOLT;
+                case 3: return ICON_BACK;
+            }
+            return nullptr;
+        case PAGE_ANIM:
+            switch (idx) {
+                case 0: return ICON_HEX;
+                case 1: return ICON_DIAMOND;
+                case 2: return ICON_BACK;
+            }
+            return nullptr;
+        case PAGE_CUBE_MENU:
+            switch (idx) {
+                case 0: return ICON_BOLT;
+                case 1: return ICON_HEX;
+                case 2: return ICON_BACK;
+            }
+            return nullptr;
+        case PAGE_LOGO_MENU:
+            switch (idx) {
+                case 0: return ICON_PLAY;      /* Replay */
+                case 1: return ICON_DIAMOND;   /* Style */
+                case 2: return ICON_BACK;
+            }
+            return nullptr;
+        default:
+            return nullptr;
+    }
+}
+
 /* 绘制菜单: 平滑滚屏 + 选择框宽度动画 + 右侧滚动条
+ * @param page   页 ID (导航页行首绘制 8×8 图标), -1=纯文字
  * @param marked 当前选中项下标 (左侧 ">" 前缀), -1=无
  * @param show  false=仅写 buffer 不推屏, 供叠层绘制用 */
 void oled_draw_menu(const MenuItem* items, int count,
                     int cursor, int scroll,
                     bool show, bool clear_first,
-                    int marked)
+                    int marked, int page)
 {
     if (clear_first) u8g2.clearBuffer();
     u8g2.setFont(FONT_SMALL);
@@ -287,11 +358,19 @@ void oled_draw_menu(const MenuItem* items, int count,
             u8g2.setDrawColor(1);
         }
 
+        /* 行首图标 (导航页): 与文字同色, 光标框覆盖时一起反白 */
+        const uint8_t* icon = (page >= 0) ? menu_icon_for(page, i) : nullptr;
+        int tx = 6;
+        if (icon && y_top >= 0 && y_top < 32) {
+            u8g2.drawXBM(0, y_top, 8, 8, icon);
+            tx = 12;   /* 图标 0-8 + 3px 空隙 */
+        }
+
         /* 当前选中项: 左侧 ">" 前缀 (x=6), 文字后移留 2px 空隙;
          * 其余行文字保持 x=6, 不为标记预留空列 */
-        int tx = (i == marked) ? 13 : 6;
         if (i == marked) {
-            u8g2.setCursor(6, cy);
+            tx = (icon) ? 15 : 13;
+            u8g2.setCursor(icon ? 9 : 6, cy);
             u8g2.print(">");
         }
         u8g2.setCursor(tx, cy);
@@ -757,7 +836,8 @@ void oled_show_menu()
             int sp = menu.popup_ret_page;
             int sc = menu.popup_ret_cursor;
             const MenuItem* items = menuPages[sp].items;
-            oled_draw_menu(items, menuPages[sp].count, sc, 0, false);
+            oled_draw_menu(items, menuPages[sp].count, sc, 0, false,
+                           true, -1, sp);
 
             if (menu.active_page == PAGE_LED_SPEED)
                 oled_draw_popup("Speed", g_led_speed, false, false);
@@ -782,6 +862,6 @@ void oled_show_menu()
         const MenuItem* items = menuPages[menu.active_page].items;
         int count = menuPages[menu.active_page].count;
         oled_draw_menu(items, count, menu.cursor, menu.scroll_offset,
-                       true, true, menu_marked_index());
+                       true, true, menu_marked_index(), menu.active_page);
     }
 }

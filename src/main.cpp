@@ -1010,7 +1010,8 @@ void loop1()
             const MenuItem* items = menuPages[menu.active_page].items;
             int cnt = menuPages[menu.active_page].count;
             oled_draw_menu(items, cnt, menu.cursor,
-                           menu.scroll_offset, false, false);
+                           menu.scroll_offset, false, false,
+                           -1, menu.active_page);
 
             u8g2.sendBuffer();
 

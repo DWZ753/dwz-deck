@@ -6,3 +6,6 @@
 
 # 第三方 UI 参考工程 (非构建依赖, 175MB)
 references/
+
+# PlatformIO 本地库 (依赖改走注册表 lib_deps)
+lib/

@@ -762,7 +762,7 @@ void oled_logo_animation()
             /* 标题 (揭示段帧10起, speed=42, 快速滑入后定格) */
             u8g2.setFont(FONT_LARGE);
             if (rf >= LOGO_REVEAL_TITLE) anim_ease(&title_y, 21.0f, 42.0f);
-            const char* t = "DWZ Deck";
+            const char* t = "DWZ Pad";
             int tw = u8g2.getStrWidth(t);
             u8g2.setCursor((128 - tw) / 2, (int)title_y);
             u8g2.print(t);
@@ -802,9 +802,9 @@ void oled_logo_animation()
             if (cover > 0 && cover < 32) u8g2.drawHLine(0, cover, 128);
 
             u8g2.setFont(FONT_LARGE);
-            int tw = u8g2.getStrWidth("DWZ Deck");
+            int tw = u8g2.getStrWidth("DWZ Pad");
             u8g2.setCursor((128 - tw) / 2, (int)title_y);
-            u8g2.print("DWZ Deck");
+            u8g2.print("DWZ Pad");
 
             u8g2.setFont(FONT_SMALL);
             if ((int)ver_x < 128) {
@@ -826,7 +826,7 @@ void oled_show_keyboard(bool show, int y_off, bool clear_first)
 
     /* 行 0: 产品名(左) + 层标签·USB(右) */
     u8g2.setCursor(0, 7 + y_off);
-    u8g2.print("DWZ DECK");
+    u8g2.print("DWZ PAD");
 
     const char* layer_tag = (g_layer == LAYER_NUMPAD) ? "NUM" : " FN";
     int tag_w = (int)u8g2.getStrWidth(layer_tag) + 10;

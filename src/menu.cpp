@@ -91,7 +91,7 @@ const MenuItem menuSaverTimeout[] = {
 #define MENU_SAVER_TIMEOUT_COUNT 5
 
 const MenuItem menuSysInfo[] = {
-    {"DWZ Deck v3.0",    MENU_ACTION},
+    {"DWZ Pad v3.0",     MENU_ACTION},
     {"RP2350 RISC-V",    MENU_ACTION},
     {"Back",             MENU_BACK},
 };

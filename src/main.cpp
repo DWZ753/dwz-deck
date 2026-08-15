@@ -949,6 +949,9 @@ void setup1()
     Wire.setSCL(SCL_PIN);
     Wire.begin();
     u8g2.begin();
+    /* I2C 默认 100kHz: 整屏 512B 传输 ~46ms (~21fps), 400k 后 ~12ms (~77fps)
+     * setBusClock 写入 u8x8 结构, U8g2 每次传输前自动应用 */
+    u8g2.setBusClock(400000);
     u8g2.setContrast(map(g_oled_bright, 0, 100, 0, 255));
     oled_logo_animation();
     /* 开屏动画不计入屏保空闲时间 */

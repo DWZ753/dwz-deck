@@ -16,18 +16,18 @@ void anim_ease(float *a, float target, float speed)
 }
 
 /* 屏保形状状态 (文件级 static, 供复位函数共享)
- * saver_ay/ax=旋转角  saver_cx/cy=弹跳中心  saver_vx/vy=漂移速度 */
+ * saver_ay/ax=旋转角  saver_cx/cy=弹跳中心  saver_vx/vy=漂移速度 (px/s) */
 static float saver_ay = 0.0f, saver_ax = 0.3f;
 static float saver_cx = 64.0f, saver_cy = 16.0f;
-static float saver_vx = 0.18f, saver_vy = 0.12f;
+static float saver_vx = 45.0f, saver_vy = 30.0f;
 
 /* 屏保进场: 形状归位屏幕中心再登场 (缩放进入由 zoom 参数完成) */
 void oled_cubesaver_reset()
 {
     saver_cx = 64.0f;
     saver_cy = 16.0f;
-    saver_vx = 0.18f;
-    saver_vy = 0.12f;
+    saver_vx = 45.0f;
+    saver_vy = 30.0f;
 }
 
 void oled_draw_cubesaver(bool show, float zoom, bool drift)
@@ -147,10 +147,16 @@ void oled_draw_cubesaver(bool show, float zoom, bool drift)
     if (saver_ay > TWO_PI) saver_ay -= TWO_PI;
     if (saver_ax > TWO_PI) saver_ax -= TWO_PI;
 
-    /* 弹跳漂移: 碰到边缘反弹 (进场/定格期间 drift=false 暂停) */
+    /* 弹跳漂移: 碰到边缘反弹 (进场/定格期间 drift=false 暂停)
+     * 时间驱动 (px/s): 高帧率下步进仍平滑, 不受帧率影响 */
     if (drift) {
-        saver_cx += saver_vx;
-        saver_cy += saver_vy;
+        static unsigned long drift_ms = 0;
+        unsigned long now_ms = millis();
+        float dt = (float)(now_ms - drift_ms) / 1000.0f;
+        drift_ms = now_ms;
+        if (dt > 0.1f) dt = 0.013f;   /* 漂移暂停间隙按一帧处理 */
+        saver_cx += saver_vx * dt;
+        saver_cy += saver_vy * dt;
         if (saver_cx < pad)       { saver_cx = pad;       saver_vx = -saver_vx; }
         if (saver_cx > 128 - pad) { saver_cx = 128 - pad; saver_vx = -saver_vx; }
         if (saver_cy < pad)       { saver_cy = pad;       saver_vy = -saver_vy; }
